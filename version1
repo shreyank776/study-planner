@@ -1,0 +1,164 @@
+import math
+import random
+
+STUDY_TASKS = [
+    "Read through your notes",
+    "Blurt out a short summary of what you just read",
+    "Make flashcards for key terms",
+    "Solve practice problems",
+    "Rewrite main concepts",
+    "Quiz yourself without looking at notes",
+    "Review any mistakes from last session",
+    "Highlight & annotate the chapter"
+    "Work on questions related to this topic",
+]
+
+BREAK_SUGGESTIONS = [
+    "Stand up and stretch your legs",
+    "Grab some water or a snack",
+    "Talk to a friend",
+    "Take a quick walk around the room",
+    "Watch Instagram reels",
+]
+
+TIPS = [
+    "Put your phone in another room during study blocks.",
+    "If a block feels too easy, try explaining the topic as if teaching someone.",
+    "After your last block, do a brain dump — write everything you remember without notes.",
+]
+
+COLORS = {
+    "header":  "\033[1;97m",
+    "study":   "\033[1;94m",
+    "break":   "\033[1;92m",
+    "task":    "\033[0;37m",
+    "time":    "\033[0;90m",
+    "stat":    "\033[1;93m",
+    "tip":     "\033[0;96m",
+    "reset":   "\033[0m",
+    "line":    "\033[0;90m",
+}
+
+def c(key, text):
+    return f"{COLORS[key]}{text}{COLORS['reset']}"
+
+def fmt_time(minutes):
+    h, m = divmod(minutes, 60)
+    if h and m:
+        return f"{h}h {m}m"
+    elif h:
+        return f"{h}h"
+    return f"{m}m"
+
+def get_int(prompt, default, min_val, max_val):
+    while True:
+        try:
+            raw = input(f"{prompt} [{default}]: ").strip()
+            val = int(raw) if raw else default
+            if min_val <= val <= max_val:
+                return val
+            print(f"  Please enter a number between {min_val} and {max_val}.")
+        except ValueError:
+            print("  Please enter a valid number.")
+
+def get_choice(prompt, options):
+    print(f"\n{prompt}")
+    for i, (label, val) in enumerate(options, 1):
+        print(f"  {i}) {label}")
+    while True:
+        try:
+            raw = input("Choice [1]: ").strip()
+            idx = int(raw) - 1 if raw else 0
+            if 0 <= idx < len(options):
+                return options[idx][1]
+            print(f"  Enter a number between 1 and {len(options)}.")
+        except ValueError:
+            print("  Enter a valid number.")
+
+def build_schedule(total, study_len, break_len, subject):
+    slot = study_len + break_len
+    num_blocks = max(1, math.floor(total / slot))
+    actual_total = num_blocks * study_len + max(0, num_blocks - 1) * break_len
+
+    tasks = random.sample(STUDY_TASKS, min(num_blocks, len(STUDY_TASKS)))
+    if num_blocks > len(STUDY_TASKS):
+        tasks += random.choices(STUDY_TASKS, k=num_blocks - len(STUDY_TASKS))
+
+    breaks = random.sample(BREAK_SUGGESTIONS, min(num_blocks - 1, len(BREAK_SUGGESTIONS)))
+    if num_blocks - 1 > len(BREAK_SUGGESTIONS):
+        breaks += random.choices(BREAK_SUGGESTIONS, k=(num_blocks - 1) - len(BREAK_SUGGESTIONS))
+
+    divider = c("line", "─" * 58)
+
+    print(f"\n{divider}")
+    print(c("header", f"  Study Session — {subject}"))
+    print(divider)
+    print(
+        f"  {c('stat', num_blocks)} blocks · "
+        f"{c('stat', fmt_time(num_blocks * study_len))} focused · "
+        f"{c('stat', max(0, num_blocks - 1))} breaks · "
+        f"Total {c('stat', fmt_time(actual_total))}"
+    )
+    print(divider)
+
+    clock = 0
+    for i in range(num_blocks):
+        start = clock
+        clock += study_len
+
+        print(
+            f"\n  {c('study', f'[ STUDY {i+1} ]')}  "
+            f"{c('time', fmt_time(start) + ' → ' + fmt_time(clock))}"
+        )
+        print(f"  {c('task', tasks[i])}")
+        print(f"  {c('time', '→ Subject: ' + subject)}")
+
+        if i < num_blocks - 1:
+            b_start = clock
+            clock += break_len
+            print(
+                f"\n  {c('break', f'[ BREAK {i+1} ]')}  "
+                f"{c('time', fmt_time(b_start) + ' → ' + fmt_time(clock))}"
+            )
+            print(f"  {c('task', breaks[i])}")
+
+    print(f"\n{divider}")
+    print(f"  {c('tip', 'Tip: ' + random.choice(TIPS))}")
+    print(f"{divider}\n")
+
+def main():
+    print(c("header", "\n  ===  Study Session Planner  ==="))
+    print(c("task",   "  Break your study time into focused blocks.\n"))
+
+    subject = input("  What are you studying? ").strip() or "my subject"
+
+    total = get_int("  Total study time (minutes)", 60, 20, 300)
+
+    study_len = get_choice("  Study block length", [
+        ("15 minutes", 15),
+        ("20 minutes", 20),
+        ("25 minutes", 25),
+        ("30 minutes", 30),
+        ("45 minutes", 45),
+        ("50 minutes", 50),
+    ])
+
+    break_len = get_choice("Break length", [
+        ("5 minutes", 5),
+        ("10 minutes", 10),
+        ("15 minutes", 15),
+    ])
+
+    build_schedule(total, study_len, break_len, subject)
+
+    while True:
+        again = input("  Build another schedule? (y/n): ").strip().lower()
+        if again == "y":
+            main()
+            break
+        elif again == "n":
+            print(c("tip", "\n  Good luck with your session!\n"))
+            break
+
+if __name__ == "__main__":
+    main()
